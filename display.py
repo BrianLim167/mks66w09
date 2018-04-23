@@ -23,13 +23,15 @@ class PPMGrid(object):
 
     def __init__( self, width = XRES, height = YRES ):
         self.screen = []
+        self.z_buffer = []
         self.width = width
         self.height = height
         for y in range( height ):
-            row = []
-            self.screen.append( row )
+            self.screen.append( [] )
+            self.z_buffer.append( [] )
             for x in range( width ):
-                self[y].append( PPMGrid.DEFAULT_COLOR[:] )
+                self.screen[y].append( PPMGrid.DEFAULT_COLOR[:] )
+                self.z_buffer[y].append( float("-inf") )
 
     def __getitem__(self, i):
         return self.screen[i]
@@ -63,6 +65,7 @@ class PPMGrid(object):
         for y in range( len(self) ):
             for x in range( len(self[y]) ):
                 self[y][x] = PPMGrid.DEFAULT_COLOR[:]
+                self.z_buffer[y][x] = float("-inf")
 
     def save_ppm( self, fname ):
         f = open( fname, 'w' )
@@ -142,6 +145,31 @@ class PPMGrid(object):
             self.draw_line( *matrix[c*3][:2], *matrix[c*3+1][:2], color )
             self.draw_line( *matrix[c*3+1][:2], *matrix[c*3+2][:2], color )
             self.draw_line( *matrix[c*3+2][:2], *matrix[c*3][:2], color )
+            self.scanline_convert( *matrix[c*3:c*3+3] )
+
+    def scanline_convert( self, p0, p1, p2 ):
+        top, mid, bot = p0, p0, p0
+        polygon = [p0, p1, p2]
+        for point in polygon:
+            if ( point[1] > top[1] ):
+                top = point
+            if ( point[1] < bot[1] ):
+                bot = point
+        for point in polygon:
+            if ( not (point is top or point is bot) ):
+                mid = point
+        y,x0,x1 = bot[1],bot[0],bot[0]
+        while ( y < mid[1] ):
+            y += 1
+            x0 += (top[0] - bot[0])/(top[1] - bot[1])
+            x1 += (mid[0] - bot[0])/(mid[1] - bot[1])
+            self.draw_line(x0,y,x1,y,PPMGrid.RED)
+        x1 = mid[0]
+        while ( y < top[1] ):
+            y += 1
+            x0 += (top[0] - bot[0])/(top[1] - bot[1])
+            x1 += (top[0] - mid[0])/(top[1] - mid[1])
+            self.draw_line(x0,y,x1,y,PPMGrid.RED)
 
     def parse_file( self, fname, color ):
         fopen = open(fname,'r')
