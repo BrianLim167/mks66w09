@@ -139,15 +139,19 @@ class PPMGrid(object):
             self.draw_line( *matrix[c*2][:2], *matrix[c*2+1][:2], color )
 
     def draw_polygons( self, matrix, color, backface_culling=True ):
+        red,green,blue = 255,0,0
         if ( backface_culling ):
             matrix = matrix.backface_cull()
         for c in range(matrix.cols//3):
             self.draw_line( *matrix[c*3][:2], *matrix[c*3+1][:2], color )
             self.draw_line( *matrix[c*3+1][:2], *matrix[c*3+2][:2], color )
             self.draw_line( *matrix[c*3+2][:2], *matrix[c*3][:2], color )
-            self.scanline_convert( *matrix[c*3:c*3+3] )
+##            self.scanline_convert( *matrix[c*3:c*3+3], [red,green,blue] )
+            red += 31
+            green += 73
+            blue += 59
 
-    def scanline_convert( self, p0, p1, p2 ):
+    def scanline_convert( self, p0, p1, p2, color ):
         top, mid, bot = p0, p0, p0
         polygon = [p0, p1, p2]
         for point in polygon:
@@ -163,13 +167,13 @@ class PPMGrid(object):
             y += 1
             x0 += (top[0] - bot[0])/(top[1] - bot[1])
             x1 += (mid[0] - bot[0])/(mid[1] - bot[1])
-            self.draw_line(x0,y,x1,y,PPMGrid.RED)
+            self.draw_line(x0,y,x1,y,color)
         x1 = mid[0]
         while ( y < top[1] ):
             y += 1
             x0 += (top[0] - bot[0])/(top[1] - bot[1])
             x1 += (top[0] - mid[0])/(top[1] - mid[1])
-            self.draw_line(x0,y,x1,y,PPMGrid.RED)
+            self.draw_line(x0,y,x1,y,color)
 
     def parse_file( self, fname, color ):
         fopen = open(fname,'r')
@@ -218,6 +222,7 @@ class PPMGrid(object):
             elif ( cmd[i] == "clear" ):
                 e = Matrix(0,4)
                 p = Matrix(0,4)
+                coordinate_system = [Matrix.ident()]
                 self.clear()
             elif ( cmd[i] == "display" ):
 ##                self.clear()

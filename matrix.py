@@ -197,9 +197,9 @@ class Matrix(object):
                 a = math.radians(180*(t+step))
                 m.add_point(cx + r*math.cos(a), cy + r*math.sin(a), cz)
             t += step
-        if ( not edge ):
-            a = math.radians(180*t)
-            m.add_point(cx + r*math.cos(a), cy + r*math.sin(a), cz)
+##        if ( not edge ):
+##            a = math.radians(180*t+90)
+##            m.add_point(cx + r*math.cos(a), cy + r*math.sin(a), cz)
         m *= Matrix.rotz(270)
         self.append(m)
 
