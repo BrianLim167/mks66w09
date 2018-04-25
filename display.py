@@ -146,7 +146,7 @@ class PPMGrid(object):
             self.draw_line( *matrix[c*3][:2], *matrix[c*3+1][:2], color )
             self.draw_line( *matrix[c*3+1][:2], *matrix[c*3+2][:2], color )
             self.draw_line( *matrix[c*3+2][:2], *matrix[c*3][:2], color )
-##            self.scanline_convert( *matrix[c*3:c*3+3], [red,green,blue] )
+            self.scanline_convert( *matrix[c*3:c*3+3], [red,green,blue] )
             red += 31
             green += 73
             blue += 59

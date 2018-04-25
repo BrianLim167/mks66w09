@@ -197,9 +197,9 @@ class Matrix(object):
                 a = math.radians(180*(t+step))
                 m.add_point(cx + r*math.cos(a), cy + r*math.sin(a), cz)
             t += step
-##        if ( not edge ):
-##            a = math.radians(180*t+90)
-##            m.add_point(cx + r*math.cos(a), cy + r*math.sin(a), cz)
+        if ( not edge ):
+            a = math.radians(180*t+90)
+            m.add_point(cx + r*math.cos(a), cy + r*math.sin(a), cz)
         m *= Matrix.rotz(270)
         self.append(m)
 
@@ -301,13 +301,14 @@ class Matrix(object):
                 b *= rotb
                 c *= rotc
                 for i in range(count):
-                    m.append(a[i])
-                    m.append(a[(i+1)%len(a)])
-                    m.append(b[i])
-                    
-                    m.append(a[i])
-                    m.append(c[(i+1)%len(c)])
-                    m.append(a[(i+1)%len(a)])
+                    if ( i != 0 ):
+                        m.append(a[i])
+                        m.append(a[(i+1)%len(a)])
+                        m.append(b[i])
+                    if ( i != count-1 ):
+                        m.append(a[i])
+                        m.append(c[(i+1)%len(c)])
+                        m.append(a[(i+1)%len(a)])
             else:
                 m.add_semicircle(0,0,0, r, True, count)
 ##            m *= rotb
