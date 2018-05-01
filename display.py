@@ -162,18 +162,24 @@ class PPMGrid(object):
         for point in polygon:
             if ( not (point is top or point is bot) ):
                 mid = point
-        y,x0,x1 = bot[1],bot[0],bot[0]
+        y,x0,x1 = float(bot[1]),float(bot[0]),float(bot[0])
+        cy0 = top[1] - bot[1]
+        cy1 = mid[1] - bot[1]
+        dx0 = (top[0] - bot[0])/cy0 if cy0 != 0 else 0
+        dx1 = (mid[0] - bot[0])/cy1 if cy1 != 0 else 0
         while ( y < mid[1] ):
-            y += 1
-            x0 += (top[0] - bot[0])/(top[1] - bot[1])
-            x1 += (mid[0] - bot[0])/(mid[1] - bot[1])
             self.draw_line(x0,y,x1,y,color)
-        x1 = mid[0]
+            y += 1.0
+            x0 += dx0
+            x1 += dx1
+        x1 = float(mid[0])
+        cy1 = top[1] - mid[1]
+        dx1 = (top[0] - mid[0])/cy1 if cy1 != 0 else 0
         while ( y < top[1] ):
-            y += 1
-            x0 += (top[0] - bot[0])/(top[1] - bot[1])
-            x1 += (top[0] - mid[0])/(top[1] - mid[1])
             self.draw_line(x0,y,x1,y,color)
+            y += 1
+            x0 += dx0
+            x1 += dx1
 
     def parse_file( self, fname, color ):
         fopen = open(fname,'r')
