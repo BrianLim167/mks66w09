@@ -55,11 +55,14 @@ class PPMGrid(object):
             ppm+= row + '\n'
         return ppm
 
-    def plot( self, color, x, y ):
+    def plot( self, color, x, y, z ):
         (x,y) = (int(x),int(y))
         newy = PPMGrid.YRES - 1 - y
-        if ( x >= 0 and x < PPMGrid.XRES and newy >= 0 and newy < PPMGrid.YRES ):
+##        z = int(z*1000000/1000000)
+        if ( x >= 0 and x < PPMGrid.XRES and newy >= 0 and newy < PPMGrid.YRES
+             and z >= self.z_buffer[newy][x] ):
             self[newy][x] = color[:]
+            self.z_buffer[newy][x] = z
 
     def clear( self ):
         for y in range( len(self) ):
@@ -86,27 +89,31 @@ class PPMGrid(object):
         p.communicate()
         remove(ppm_name)
 
-    def draw_line( self, x0, y0, x1, y1, color ):
+    def draw_line( self, x0, y0, z0, x1, y1, z1, color ):
         if ( x1 < x0 ):
             (x0, x1) = (x1, x0)
             (y0, y1) = (y1, y0)
+            (z0, z1) = (z1, z0)
         a = y1 - y0
         b = x0 - x1
-        (x,y) = (x0,y0)
+        (x,y,z) = (x0,y0,z0)
         if ( 0 <= a <= -b ): # oct 1
             d = 2*a + b
+            dz = (z1 - z0) / abs(x1 - x0) if x1 != x0 else 0
             while ( x <= x1 ):
-                self.plot( color, x, y)
+                self.plot( color, x, y, z )
                 if ( d > 0 ):
                     y += 1
                     d += 2*b
+                    
                 x += 1
                 d += 2*a
             return
         if ( -b <= a ): # oct 2
             d = a + 2*b
+            dz = (z1 - z0) / abs(y1 - y0) if y1 != y0 else 0
             while ( y <= y1 ):
-                self.plot( color, x, y)
+                self.plot( color, x, y, z )
                 if ( d < 0 ):
                     x += 1
                     d += 2*a
@@ -115,8 +122,9 @@ class PPMGrid(object):
             return
         if ( b <= a <= 0 ): # oct 8
             d = 2*a - b
+            dz = (z1 - z0) / abs(x1 - x0) if x1 != x0 else 0
             while ( x <= x1 ):
-                self.plot( color, x, y)
+                self.plot( color, x, y, z )
                 if ( d < 0 ):
                     y -= 1
                     d -= 2*b
@@ -125,8 +133,9 @@ class PPMGrid(object):
             return
         if ( a <= b ): # oct 7
             d = a - 2*b
+            dz = (z1 - z0) / abs(y1 - y0) if y1 != y0 else 0
             while ( y >= y1 ):
-                self.plot( color, x, y)
+                self.plot( color, x, y, z )
                 if ( d > 0 ):
                     x += 1
                     d += 2*a
@@ -136,16 +145,16 @@ class PPMGrid(object):
         
     def draw_lines( self, matrix, color ):
         for c in range(matrix.cols//2):
-            self.draw_line( *matrix[c*2][:2], *matrix[c*2+1][:2], color )
+            self.draw_line( *matrix[c*2][:3], *matrix[c*2+1][:3], color )
 
     def draw_polygons( self, matrix, color, backface_culling=True ):
         red,green,blue = 255,0,0
         if ( backface_culling ):
             matrix = matrix.backface_cull()
         for c in range(matrix.cols//3):
-            self.draw_line( *matrix[c*3][:2], *matrix[c*3+1][:2], color )
-            self.draw_line( *matrix[c*3+1][:2], *matrix[c*3+2][:2], color )
-            self.draw_line( *matrix[c*3+2][:2], *matrix[c*3][:2], color )
+##            self.draw_line( *matrix[c*3][:3], *matrix[c*3+1][:3], color )
+##            self.draw_line( *matrix[c*3+1][:3], *matrix[c*3+2][:3], color )
+##            self.draw_line( *matrix[c*3+2][:3], *matrix[c*3][:3], color )
             self.scanline_convert( *matrix[c*3:c*3+3], [red,green,blue] )
             red += 31
             green += 73
@@ -162,24 +171,34 @@ class PPMGrid(object):
         for point in polygon:
             if ( not (point is top or point is bot) ):
                 mid = point
-        y,x0,x1 = float(bot[1]),float(bot[0]),float(bot[0])
+        y = float(bot[1])
+        x0,x1 = float(bot[0]),float(bot[0])
+        z0,z1 = float(bot[2]),float(bot[2])
         cy0 = top[1] - bot[1]
         cy1 = mid[1] - bot[1]
         dx0 = (top[0] - bot[0])/cy0 if cy0 != 0 else 0
         dx1 = (mid[0] - bot[0])/cy1 if cy1 != 0 else 0
+        dz0 = (top[2] - bot[2])/cy0 if cy0 != 0 else 0
+        dz1 = (mid[2] - bot[2])/cy1 if cy1 != 0 else 0
         while ( y < mid[1] ):
-            self.draw_line(x0,y,x1,y,color)
+            self.draw_line(x0,y,z0,x1,y,z1,color)
             y += 1.0
             x0 += dx0
             x1 += dx1
+            z0 += dz0
+            z1 += dz1
         x1 = float(mid[0])
+        z1 = float(mid[2])
         cy1 = top[1] - mid[1]
         dx1 = (top[0] - mid[0])/cy1 if cy1 != 0 else 0
+        dz1 = (top[2] - mid[2])/cy1 if cy1 != 0 else 0
         while ( y < top[1] ):
-            self.draw_line(x0,y,x1,y,color)
+            self.draw_line(x0,y,z0,x1,y,z1,color)
             y += 1
             x0 += dx0
             x1 += dx1
+            z0 += dz0
+            z1 += dz1
 
     def parse_file( self, fname, color ):
         fopen = open(fname,'r')
