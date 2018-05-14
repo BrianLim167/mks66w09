@@ -1,5 +1,7 @@
 #BODY
 push
+rotate
+x 60
 move
 250 250 0
 rotate

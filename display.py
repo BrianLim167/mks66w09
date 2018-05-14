@@ -58,7 +58,7 @@ class PPMGrid(object):
     def plot( self, color, x, y, z ):
         (x,y) = (int(x),int(y))
         newy = PPMGrid.YRES - 1 - y
-##        z = int(z*1000000/1000000)
+        z = int(z*1000000/1000000)
         if ( x >= 0 and x < PPMGrid.XRES and newy >= 0 and newy < PPMGrid.YRES
              and z >= self.z_buffer[newy][x] ):
             self[newy][x] = color[:]
@@ -99,7 +99,7 @@ class PPMGrid(object):
         (x,y,z) = (x0,y0,z0)
         if ( 0 <= a <= -b ): # oct 1
             d = 2*a + b
-            dz = (z1 - z0) / abs(x1 - x0) if x1 != x0 else 0
+            dz = (z1 - z0) / (x1 - x0) if x1 != x0 else 0
             while ( x <= x1 ):
                 self.plot( color, x, y, z )
                 if ( d > 0 ):
@@ -108,6 +108,7 @@ class PPMGrid(object):
                     
                 x += 1
                 d += 2*a
+                z += dz
             return
         if ( -b <= a ): # oct 2
             d = a + 2*b
@@ -119,10 +120,11 @@ class PPMGrid(object):
                     d += 2*a
                 y += 1
                 d += 2*b
+                z += dz
             return
         if ( b <= a <= 0 ): # oct 8
             d = 2*a - b
-            dz = (z1 - z0) / abs(x1 - x0) if x1 != x0 else 0
+            dz = (z1 - z0) / (x1 - x0) if x1 != x0 else 0
             while ( x <= x1 ):
                 self.plot( color, x, y, z )
                 if ( d < 0 ):
@@ -130,6 +132,7 @@ class PPMGrid(object):
                     d -= 2*b
                 x += 1
                 d += 2*a
+                z += dz
             return
         if ( a <= b ): # oct 7
             d = a - 2*b
@@ -141,6 +144,7 @@ class PPMGrid(object):
                     d += 2*a
                 y -= 1
                 d -= 2*b
+                z += dz
             return
         
     def draw_lines( self, matrix, color ):
@@ -161,39 +165,33 @@ class PPMGrid(object):
             blue += 59
 
     def scanline_convert( self, p0, p1, p2, color ):
-        top, mid, bot = p0, p0, p0
         polygon = [p0, p1, p2]
-        for point in polygon:
-            if ( point[1] > top[1] ):
-                top = point
-            if ( point[1] < bot[1] ):
-                bot = point
-        for point in polygon:
-            if ( not (point is top or point is bot) ):
-                mid = point
-        y = float(bot[1])
-        x0,x1 = float(bot[0]),float(bot[0])
-        z0,z1 = float(bot[2]),float(bot[2])
-        cy0 = top[1] - bot[1]
-        cy1 = mid[1] - bot[1]
+        polygon.sort(key = lambda x: x[1])
+        bot,mid,top = polygon[0],polygon[1],polygon[2]
+        y = int(bot[1])
+        x0,x1 = bot[0],bot[0]
+        z0,z1 = bot[2],bot[2]
+        cy0 = int(top[1]) - y * 1.0
+        cy1 = int(mid[1]) - y * 1.0
         dx0 = (top[0] - bot[0])/cy0 if cy0 != 0 else 0
         dx1 = (mid[0] - bot[0])/cy1 if cy1 != 0 else 0
         dz0 = (top[2] - bot[2])/cy0 if cy0 != 0 else 0
         dz1 = (mid[2] - bot[2])/cy1 if cy1 != 0 else 0
-        while ( y < mid[1] ):
-            self.draw_line(x0,y,z0,x1,y,z1,color)
-            y += 1.0
+        while ( y < int(mid[1]) ):
+            self.draw_line(int(x0),y,z0,int(x1),y,z1,color)
+            y += 1
             x0 += dx0
             x1 += dx1
             z0 += dz0
             z1 += dz1
-        x1 = float(mid[0])
-        z1 = float(mid[2])
-        cy1 = top[1] - mid[1]
+        y = int(mid[1])
+        x1 = mid[0]
+        z1 = mid[2]
+        cy1 = int(top[1]) - int(mid[1]) * 1.0
         dx1 = (top[0] - mid[0])/cy1 if cy1 != 0 else 0
         dz1 = (top[2] - mid[2])/cy1 if cy1 != 0 else 0
-        while ( y < top[1] ):
-            self.draw_line(x0,y,z0,x1,y,z1,color)
+        while ( y < int(top[1]) ):
+            self.draw_line(int(x0),y,z0,int(x1),y,z1,color)
             y += 1
             x0 += dx0
             x1 += dx1
